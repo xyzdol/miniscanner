@@ -1,21 +1,11 @@
 # src/app.py
-# MiniScanner CLI 扫描器主程序（增强版）
-# 目的：
-# - 接受目标 (--target)、模块 (--modules)、以及参数名 (--param)。
-# - 动态导入每个检测模块并调用其 scan() 函数。
-# - scan() 的接口可为 scan(target) 或 scan(target, param_name)，CLI 会自动判断。
-#
-# 知识点：
-# - argparse 用于命令行解析
-# - importlib 动态加载模块
-# - inspect.signature() 用于判断函数参数
-# - json.dumps(indent=2) 格式化输出结果
-
+# MiniScanner CLI 主程序（增加 --cookie 支持）
 import argparse
 import importlib
 import inspect
 import json
 import sys
+import requests
 
 MODULE_MAP = {
     'sql': 'modules.sql_injection',
@@ -24,7 +14,6 @@ MODULE_MAP = {
 }
 
 def load_module(name: str):
-    """根据短名导入对应模块。"""
     mod_path = MODULE_MAP.get(name)
     if not mod_path:
         raise ValueError(f'未知模块: {name}')
@@ -33,8 +22,29 @@ def load_module(name: str):
     except Exception as e:
         raise ImportError(f'导入模块失败 {mod_path}: {e}')
 
-def run_scan(target: str, modules, param_name: str = None):
-    """运行指定模块的 scan() 并收集结果。"""
+def make_session_from_cookie_string(cookie_string: str):
+    """
+    cookie_string 示例: "PHPSESSID=abcd; security=low"
+    返回一个 requests.Session(), 并把 Cookie header 设置上（以及 cookies）
+    """
+    s = requests.Session()
+    # 将 string 解析为 dict，并设置到 session.cookies
+    cookies = {}
+    for part in cookie_string.split(';'):
+        part = part.strip()
+        if not part:
+            continue
+        if '=' in part:
+            k, v = part.split('=', 1)
+            cookies[k.strip()] = v.strip()
+    # 设置到 session 的 cookies
+    jar = requests.cookies.RequestsCookieJar()
+    for k, v in cookies.items():
+        jar.set(k, v)
+    s.cookies.update(jar)
+    return s
+
+def run_scan(target: str, modules, param_name: str = None, session: requests.Session = None):
     results = {}
     for m in modules:
         m = m.strip()
@@ -42,36 +52,40 @@ def run_scan(target: str, modules, param_name: str = None):
             continue
         mod = load_module(m)
         try:
-            # 判断模块的 scan() 是否支持 param_name 参数
             scan_func = getattr(mod, 'scan')
             sig = inspect.signature(scan_func)
+            # 传入 param_name / session（如果模块支持）
+            kwargs = {}
             if 'param_name' in sig.parameters:
-                # 模块支持 param_name，传入 param_name 参数
-                res = scan_func(target, param_name=param_name)
-            else:
-                # 模块不支持 param_name，只传 target
-                res = scan_func(target)
+                kwargs['param_name'] = param_name
+            if 'session' in sig.parameters and session is not None:
+                kwargs['session'] = session
+            # 调用 scan
+            res = scan_func(target, **kwargs)
         except Exception as e:
             res = {'error': str(e)}
         results[m] = res
     return results
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(
-        description='MiniScanner - 简易漏洞扫描工具 (教育版)')
+    parser = argparse.ArgumentParser(description='MiniScanner - 简易漏洞扫描工具 (教育版)')
     parser.add_argument('--target', required=True, help='目标URL或主机')
-    parser.add_argument('--modules', default='sql,xss,port',
-                        help='要运行的模块(以逗号分隔)，如 sql,xss,port')
-    parser.add_argument('--param', default='q',
-                        help='参数名(默认 q)，针对SQLi/XSS等模块')
+    parser.add_argument('--modules', default='sql,xss,port', help='要运行的模块(以逗号分隔)')
+    parser.add_argument('--param', default='q', help='参数名(默认 q)，针对SQLi/XSS等模块')
+    parser.add_argument('--cookie', default=None, help='Cookie 字符串，例如 "PHPSESSID=abc; security=low"（可选）')
     args = parser.parse_args(argv)
 
     modules = [x for x in args.modules.split(',') if x]
+    session = None
+    if args.cookie:
+        session = make_session_from_cookie_string(args.cookie)
+
     print('目标地址:', args.target)
     print('启用模块:', modules)
     print('参数名:', args.param)
+    print('使用 Cookie:', bool(args.cookie))
 
-    results = run_scan(args.target, modules, param_name=args.param)
+    results = run_scan(args.target, modules, param_name=args.param, session=session)
     print('\n=== 扫描结果 ===')
     print(json.dumps(results, indent=2, ensure_ascii=False))
     return 0
