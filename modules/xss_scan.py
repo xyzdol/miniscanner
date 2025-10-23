@@ -1,55 +1,79 @@
 # modules/xss_scan.py
+"""
+XSS 检测模块（改进版）
+支持反射型、script上下文、HTML转义检测。
+"""
 import requests
+from urllib.parse import urlencode
 import html
 import time
-from typing import Optional
+import re
 
-PAYLOAD = "<sCrIpT>alert('xss')</sCrIpT>"
-TIMEOUT = 4.0
 
-def _payload_reflected_raw(body: str) -> bool:
-    if not body:
-        return False
-    return PAYLOAD in body
+def scan(target: str, param_name: str = "q", session: requests.Session = None):
+    s = session or requests.Session()
+    s.headers.update({"User-Agent": "MiniScanner-XSS/3.0"})
 
-def _payload_escaped(body: str) -> bool:
-    if not body:
-        return False
-    return html.escape(PAYLOAD) in body
+    payloads = [
+        "<script>alert(1)</script>",
+        "<ScRipT>alert(123)</ScRipT>",
+        "'><img src=x onerror=alert(1)>",
+        "\" onmouseover=alert(1) x=\"",
+        "<svg/onload=alert(1)>"
+    ]
 
-def _make_test_url(base: str, param_name: str, payload: str) -> str:
-    from requests.utils import requote_uri
-    sep = '&' if '?' in base else '?'
-    return f"{base}{sep}{param_name}={requote_uri(payload)}"
+    detected = False
+    vulnerable_payload = None
+    evidence = []
 
-def scan(target: str, param_name: str = 'q', session: Optional[requests.Session] = None) -> dict:
-    res = {
-        'name': 'xss_scan',
-        'target': target,
-        'detected': False,
-        'evidence': [],
-        'notes': 'Naive reflective XSS check.'
+    for payload in payloads:
+        try:
+            url = f"{target}?{urlencode({param_name: payload})}"
+            start = time.time()
+            r = s.get(url, timeout=10)
+            elapsed = round(time.time() - start, 3)
+            body_raw = r.text
+            body = body_raw.lower()
+
+            # 第一次转义检查
+            plain = payload.lower()
+            encoded = html.escape(payload).lower()
+            double_encoded = html.escape(encoded).lower()
+            decoded_body = html.unescape(body)
+
+            # 关键字匹配
+            js_keywords = ["alert(", "onerror=", "onload=", "script>", "svg/onload"]
+
+            reason = None
+            if plain in body:
+                reason = "payload_reflected_raw"
+            elif encoded in body or double_encoded in body:
+                reason = "payload_reflected_encoded"
+            elif any(kw in decoded_body for kw in js_keywords):
+                reason = "js_keyword_reflection"
+
+            evidence.append({
+                "payload": payload,
+                "url": url,
+                "status_code": r.status_code,
+                "time": elapsed,
+                "reason": reason,
+                "snippet": decoded_body[:500]  # 前500字符
+            })
+
+            if reason:
+                detected = True
+                vulnerable_payload = payload
+                break
+
+        except Exception as e:
+            evidence.append({"payload": payload, "error": str(e)})
+
+    return {
+        "name": "xss_scan",
+        "target": target,
+        "detected": detected,
+        "vulnerable_payload": vulnerable_payload,
+        "evidence": evidence,
+        "notes": "Reflected + script-context XSS detection with HTML decode."
     }
-
-    requester = session if session is not None else requests
-
-    test_url = _make_test_url(target, param_name, PAYLOAD)
-    try:
-        r = requester.get(test_url, timeout=TIMEOUT)
-        body = r.text or ""
-    except Exception as e:
-        res['notes'] = f'Network error: {e}'
-        return res
-
-    if _payload_reflected_raw(body):
-        res['detected'] = True
-        res['evidence'].append({'payload': PAYLOAD, 'reason': 'payload_reflected_raw', 'url': test_url})
-        return res
-
-    if _payload_escaped(body):
-        res['evidence'].append({'payload': PAYLOAD, 'reason': 'payload_escaped', 'url': test_url})
-    else:
-        res['evidence'].append({'payload': PAYLOAD, 'reason': 'no_reflection', 'url': test_url})
-
-    time.sleep(0.2)
-    return res
