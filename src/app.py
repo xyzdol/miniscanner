@@ -1,5 +1,5 @@
 # src/app.py
-# MiniScanner CLI 主程序（增加 --cookie 支持）
+# MiniScanner CLI 主程序（增加 --cookie 与 time-based 选项）
 import argparse
 import importlib
 import inspect
@@ -25,10 +25,9 @@ def load_module(name: str):
 def make_session_from_cookie_string(cookie_string: str):
     """
     cookie_string 示例: "PHPSESSID=abcd; security=low"
-    返回一个 requests.Session(), 并把 Cookie header 设置上（以及 cookies）
+    返回一个 requests.Session(), 并把 Cookie 设置到 session.cookies
     """
     s = requests.Session()
-    # 将 string 解析为 dict，并设置到 session.cookies
     cookies = {}
     for part in cookie_string.split(';'):
         part = part.strip()
@@ -37,14 +36,14 @@ def make_session_from_cookie_string(cookie_string: str):
         if '=' in part:
             k, v = part.split('=', 1)
             cookies[k.strip()] = v.strip()
-    # 设置到 session 的 cookies
     jar = requests.cookies.RequestsCookieJar()
     for k, v in cookies.items():
         jar.set(k, v)
     s.cookies.update(jar)
     return s
 
-def run_scan(target: str, modules, param_name: str = None, session: requests.Session = None):
+def run_scan(target: str, modules, param_name: str = None, session: requests.Session = None,
+             enable_time: bool = False, time_threshold: float = 3.0):
     results = {}
     for m in modules:
         m = m.strip()
@@ -54,12 +53,16 @@ def run_scan(target: str, modules, param_name: str = None, session: requests.Ses
         try:
             scan_func = getattr(mod, 'scan')
             sig = inspect.signature(scan_func)
-            # 传入 param_name / session（如果模块支持）
+            # 传入 param_name / session / enable_time / time_threshold（如果模块支持）
             kwargs = {}
             if 'param_name' in sig.parameters:
                 kwargs['param_name'] = param_name
             if 'session' in sig.parameters and session is not None:
                 kwargs['session'] = session
+            if 'enable_time' in sig.parameters:
+                kwargs['enable_time'] = enable_time
+            if 'time_threshold' in sig.parameters:
+                kwargs['time_threshold'] = time_threshold
             # 调用 scan
             res = scan_func(target, **kwargs)
         except Exception as e:
@@ -73,6 +76,9 @@ def main(argv=None):
     parser.add_argument('--modules', default='sql,xss,port', help='要运行的模块(以逗号分隔)')
     parser.add_argument('--param', default='q', help='参数名(默认 q)，针对SQLi/XSS等模块')
     parser.add_argument('--cookie', default=None, help='Cookie 字符串，例如 "PHPSESSID=abc; security=low"（可选）')
+    parser.add_argument('--enable-time', action='store_true', help='启用 time-based (盲注)检测（默认关闭）')
+    parser.add_argument('--time-threshold', type=float, default=3.0, help='time-based 判定阈值（秒），默认 3.0')
+
     args = parser.parse_args(argv)
 
     modules = [x for x in args.modules.split(',') if x]
@@ -84,8 +90,10 @@ def main(argv=None):
     print('启用模块:', modules)
     print('参数名:', args.param)
     print('使用 Cookie:', bool(args.cookie))
+    print('time-based 启用:', args.enable_time, ' 阈值(s):', args.time_threshold)
 
-    results = run_scan(args.target, modules, param_name=args.param, session=session)
+    results = run_scan(args.target, modules, param_name=args.param, session=session,
+                       enable_time=args.enable_time, time_threshold=args.time_threshold)
     print('\n=== 扫描结果 ===')
     print(json.dumps(results, indent=2, ensure_ascii=False))
     return 0
