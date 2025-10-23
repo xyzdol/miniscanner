@@ -1,73 +1,101 @@
 # modules/xss_scan.py
 """
-XSS 检测模块（改进版）
-支持反射型、script上下文、HTML转义检测。
+模块化 XSS 扫描器（从 payload JSON 加载）
+保持与 sql 模块相似的返回结构
 """
-import requests
-from urllib.parse import urlencode
-import html
+import json
+import os
 import time
-import re
+import html
+from urllib.parse import urlencode
+import requests
 
+PAYLOAD_FILE = os.path.join(os.path.dirname(__file__), "payloads", "xss_payloads.json")
 
-def scan(target: str, param_name: str = "q", session: requests.Session = None):
+def _load_payloads():
+    try:
+        with open(PAYLOAD_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        # 回退到内置小集合（以防文件缺失）
+        return {
+            "reflected": ["<script>alert(1)</script>"],
+            "dom_script_context": ["');alert(1);//"],
+            "event_handlers": ["onerror=alert(1)"]
+        }
+
+def _test_payload(session, target, param_name, payload):
+    url = f"{target}?{urlencode({param_name: payload})}"
+    start = time.time()
+    r = session.get(url, timeout=10)
+    elapsed = round(time.time() - start, 3)
+    return r, elapsed, url
+
+def scan(target: str, param_name: str = "q", session: requests.Session = None, enable_time: bool = False, time_threshold: float = 3.0):
     s = session or requests.Session()
-    s.headers.update({"User-Agent": "MiniScanner-XSS/3.0"})
+    s.headers.update({"User-Agent": "MiniScanner-XSS/Modular/1.0"})
 
-    payloads = [
-        "<script>alert(1)</script>",
-        "<ScRipT>alert(123)</ScRipT>",
-        "'><img src=x onerror=alert(1)>",
-        "\" onmouseover=alert(1) x=\"",
-        "<svg/onload=alert(1)>"
-    ]
-
+    payload_groups = _load_payloads()
+    evidence = []
     detected = False
     vulnerable_payload = None
-    evidence = []
+    attempts = 0
 
-    for payload in payloads:
-        try:
-            url = f"{target}?{urlencode({param_name: payload})}"
-            start = time.time()
-            r = s.get(url, timeout=10)
-            elapsed = round(time.time() - start, 3)
-            body_raw = r.text
-            body = body_raw.lower()
+    # unified detection heuristics
+    def analyze_response(r_text):
+        # 原始 body，小写
+        raw = r_text
+        body = raw.lower()
+        # html unescape for detecting encoded content
+        decoded = html.unescape(body)
+        return body, decoded
 
-            # 第一次转义检查
-            plain = payload.lower()
-            encoded = html.escape(payload).lower()
-            double_encoded = html.escape(encoded).lower()
-            decoded_body = html.unescape(body)
+    for group_name, payload_list in payload_groups.items():
+        for payload in payload_list:
+            attempts += 1
+            try:
+                r, elapsed, url = _test_payload(s, target, param_name, payload)
+                body, decoded = analyze_response(r.text)
 
-            # 关键字匹配
-            js_keywords = ["alert(", "onerror=", "onload=", "script>", "svg/onload"]
+                # detection rules (逐步宽松)
+                reason = None
+                if payload.lower() in body:
+                    reason = "payload_reflected_raw"
+                elif html.escape(payload).lower() in body:
+                    reason = "payload_reflected_encoded"
+                else:
+                    # look for JS keywords in decoded content (alert / onerror / onload)
+                    if any(k in decoded for k in ["alert(", "onerror=", "onload=", "script>"]):
+                        reason = "js_keyword_reflection"
 
-            reason = None
-            if plain in body:
-                reason = "payload_reflected_raw"
-            elif encoded in body or double_encoded in body:
-                reason = "payload_reflected_encoded"
-            elif any(kw in decoded_body for kw in js_keywords):
-                reason = "js_keyword_reflection"
+                ev = {
+                    "payload": payload,
+                    "group": group_name,
+                    "method": "GET",
+                    "url": url,
+                    "status_code": r.status_code,
+                    "time": elapsed,
+                    "reason": reason
+                }
+                evidence.append(ev)
 
-            evidence.append({
-                "payload": payload,
-                "url": url,
-                "status_code": r.status_code,
-                "time": elapsed,
-                "reason": reason,
-                "snippet": decoded_body[:500]  # 前500字符
-            })
+                if reason:
+                    detected = True
+                    vulnerable_payload = payload
+                    # stop at first positive (与 sql 风格一致)
+                    return {
+                        "name": "xss_scan",
+                        "target": target,
+                        "detected": True,
+                        "vulnerable_payload": vulnerable_payload,
+                        "evidence": [ev],
+                        "attempts_tried": attempts,
+                        "notes": "Modular XSS scan (group-based payloads)."
+                    }
 
-            if reason:
-                detected = True
-                vulnerable_payload = payload
-                break
-
-        except Exception as e:
-            evidence.append({"payload": payload, "error": str(e)})
+            except Exception as e:
+                evidence.append({"payload": payload, "error": str(e)})
+                continue
 
     return {
         "name": "xss_scan",
@@ -75,5 +103,6 @@ def scan(target: str, param_name: str = "q", session: requests.Session = None):
         "detected": detected,
         "vulnerable_payload": vulnerable_payload,
         "evidence": evidence,
-        "notes": "Reflected + script-context XSS detection with HTML decode."
+        "attempts_tried": attempts,
+        "notes": "Modular XSS scan (group-based payloads)."
     }
