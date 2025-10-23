@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>MiniScanner Report — http://localhost:8898/vulnerabilities/xss_d/</title>
+<style>/* reporters/assets/style.css - modern */
+body { font-family: "Segoe UI", Roboto, Arial; background:#f6f8fb; color:#17202a; margin:0; padding:18px; }
+header { background: linear-gradient(90deg,#0ea5e9,#6366f1); color:#fff; padding:18px; border-radius:8px; }
+header h1 { margin:0; font-size:1.4rem; }
+.controls { margin-top:8px; display:flex; gap:8px; align-items:center; }
+.controls input { padding:8px 10px; border-radius:8px; border: none; width:260px; }
+.controls button { padding:8px 10px; border-radius:8px; border:none; background:#fff; color:#111; cursor:pointer; }
+.summary { margin-top:8px; }
+.badge { background:#ffffff33; padding:6px 10px; border-radius:999px; margin-right:6px; }
+.badge.vuln { background:#ffdddd; color:#b30000; font-weight:700 }
+main { margin-top:14px; }
+.module { background:#fff; border-radius:8px; box-shadow:0 2px 6px rgba(12,17,26,0.06); margin-bottom:10px; overflow:hidden; }
+.module-header { display:flex; justify-content:space-between; padding:12px 14px; cursor:pointer; }
+.module-body { padding:12px 14px; background:#f8fafc }
+.module-header .name { font-weight:700 }
+.status.ok { color:green; font-weight:700 }
+.status.vuln { color:#b30000; font-weight:800 }
+pre { background:#0b1720; color:#eaf6ff; padding:12px; border-radius:6px; overflow:auto; max-height:420px }
+</style>
+</head>
+<body>
+<header><h1>MiniScanner Report — http://localhost:8898/vulnerabilities/xss_d/</h1><div class="meta">Time: 2025-10-23T14:51:38.086178Z</div></header>
+
+<div class="controls">
+  <input id="search" placeholder="搜索模块名或 payload ..." />
+  <button onclick="filterOnlyVuln()">只看有漏洞</button>
+  <button onclick="expandAll()">全部展开</button>
+  <button onclick="collapseAll()">全部折叠</button>
+</div>
+
+<div id="content">
+
+<div class="card" data-vuln="true">
+  <div class="card-header">
+    <span class="module">xss</span>
+    <span class="status vuln">VULN</span>
+    <button onclick="toggle('body1')">展开/折叠</button>
+    <button onclick="copyText('pre1')">复制JSON</button>
+  </div>
+  <div id="body1" class="card-body" style="display:none">
+    <pre id="pre1">{
+  &quot;name&quot;: &quot;xss_scan&quot;,
+  &quot;target&quot;: &quot;http://localhost:8898/vulnerabilities/xss_d/&quot;,
+  &quot;detected&quot;: true,
+  &quot;vulnerable_payload&quot;: &quot;&lt;script&gt;alert(1)&lt;/script&gt;&quot;,
+  &quot;evidence&quot;: [
+    {
+      &quot;payload&quot;: &quot;&lt;script&gt;alert(1)&lt;/script&gt;&quot;,
+      &quot;group&quot;: &quot;reflected&quot;,
+      &quot;method&quot;: &quot;GET&quot;,
+      &quot;url&quot;: &quot;http://localhost:8898/vulnerabilities/xss_d/?default=%3Cscript%3Ealert%281%29%3C%2Fscript%3E&quot;,
+      &quot;status_code&quot;: 200,
+      &quot;time&quot;: 0.042,
+      &quot;reason&quot;: &quot;js_keyword_reflection&quot;
+    }
+  ],
+  &quot;attempts_tried&quot;: 1,
+  &quot;notes&quot;: &quot;Modular XSS scan (group-based payloads).&quot;
+}</pre>
+  </div>
+</div>
+
+</div>
+
+<script>
+function toggle(id){
+  const e = document.getElementById(id);
+  e.style.display = (e.style.display === 'none') ? 'block' : 'none';
+}
+function expandAll(){
+  document.querySelectorAll('.card-body').forEach(e => e.style.display='block');
+}
+function collapseAll(){
+  document.querySelectorAll('.card-body').forEach(e => e.style.display='none');
+}
+function filterOnlyVuln(){
+  document.querySelectorAll('.card').forEach(card=>{
+    card.style.display = card.dataset.vuln === 'true' ? 'block' : 'none';
+  });
+}
+document.getElementById('search').addEventListener('input', function(e){
+  const q = e.target.value.toLowerCase();
+  document.querySelectorAll('.card').forEach(card=>{
+    const text = card.innerText.toLowerCase();
+    card.style.display = text.includes(q) ? 'block' : 'none';
+  });
+});
+function copyText(id){
+  const t = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(t);
+  alert('已复制到剪贴板');
+}
+</script>
+
+</body>
+</html>

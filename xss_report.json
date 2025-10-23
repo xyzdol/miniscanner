@@ -1,0 +1,34 @@
+{
+  "meta": {
+    "generated_at": "2025-10-23T14:51:38.086178Z",
+    "target": "http://localhost:8898/vulnerabilities/xss_d/",
+    "modules": [
+      "xss"
+    ],
+    "param": "default",
+    "cookie": true,
+    "enable_time": false,
+    "time_threshold": 3.0
+  },
+  "results": {
+    "xss": {
+      "name": "xss_scan",
+      "target": "http://localhost:8898/vulnerabilities/xss_d/",
+      "detected": true,
+      "vulnerable_payload": "<script>alert(1)</script>",
+      "evidence": [
+        {
+          "payload": "<script>alert(1)</script>",
+          "group": "reflected",
+          "method": "GET",
+          "url": "http://localhost:8898/vulnerabilities/xss_d/?default=%3Cscript%3Ealert%281%29%3C%2Fscript%3E",
+          "status_code": 200,
+          "time": 0.042,
+          "reason": "js_keyword_reflection"
+        }
+      ],
+      "attempts_tried": 1,
+      "notes": "Modular XSS scan (group-based payloads)."
+    }
+  }
+}
