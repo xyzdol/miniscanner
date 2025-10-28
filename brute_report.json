@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "generated_at": "2025-10-28T09:35:07Z",
+    "target": "http://localhost:8898/vulnerabilities/brute/",
+    "modules": [
+      "bruteforce"
+    ],
+    "param": "q",
+    "cookie": true,
+    "enable_time": false,
+    "time_threshold": 3.0,
+    "login_path": "",
+    "user_field": "username",
+    "pass_field": "password",
+    "max_attempts": 200,
+    "delay": 0.2,
+    "users_file": "users.txt",
+    "passwords_file": "passwords.txt",
+    "success_indicator": null
+  },
+  "results": {
+    "bruteforce": {
+      "name": "bruteforce",
+      "target": "http://localhost:8898/vulnerabilities/brute/",
+      "detected": true,
+      "vulnerable_payload": {
+        "username": "admin",
+        "password": "password"
+      },
+      "evidence": [
+        {
+          "username": "admin",
+          "password": "password",
+          "url": "http://localhost:8898/vulnerabilities/brute/",
+          "status_code": 200,
+          "time": 0.004444,
+          "len": 4321,
+          "succeeded": true,
+          "reason": "Matched success keywords"
+        }
+      ],
+      "attempts_tried": 1,
+      "notes": "发现有效凭证 admin:password (Matched success keywords)"
+    }
+  }
+}

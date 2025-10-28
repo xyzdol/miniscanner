@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  scanner:
+    build: .
+    volumes:
+      - ./:/app
+    ports:
+      - "8001:8001"

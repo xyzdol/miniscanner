@@ -1,0 +1,18 @@
+/* reporters/assets/style.css - modern */
+body { font-family: "Segoe UI", Roboto, Arial; background:#f6f8fb; color:#17202a; margin:0; padding:18px; }
+header { background: linear-gradient(90deg,#0ea5e9,#6366f1); color:#fff; padding:18px; border-radius:8px; }
+header h1 { margin:0; font-size:1.4rem; }
+.controls { margin-top:8px; display:flex; gap:8px; align-items:center; }
+.controls input { padding:8px 10px; border-radius:8px; border: none; width:260px; }
+.controls button { padding:8px 10px; border-radius:8px; border:none; background:#fff; color:#111; cursor:pointer; }
+.summary { margin-top:8px; }
+.badge { background:#ffffff33; padding:6px 10px; border-radius:999px; margin-right:6px; }
+.badge.vuln { background:#ffdddd; color:#b30000; font-weight:700 }
+main { margin-top:14px; }
+.module { background:#fff; border-radius:8px; box-shadow:0 2px 6px rgba(12,17,26,0.06); margin-bottom:10px; overflow:hidden; }
+.module-header { display:flex; justify-content:space-between; padding:12px 14px; cursor:pointer; }
+.module-body { padding:12px 14px; background:#f8fafc }
+.module-header .name { font-weight:700 }
+.status.ok { color:green; font-weight:700 }
+.status.vuln { color:#b30000; font-weight:800 }
+pre { background:#0b1720; color:#eaf6ff; padding:12px; border-radius:6px; overflow:auto; max-height:420px }
