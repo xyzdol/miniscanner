@@ -1,20 +1,33 @@
-# MiniScanner — Empty Project Shell
+# MiniScanner — 教育用轻量级漏洞检测器
 
-> **Ethical Notice**:  
-> This project is intended for **educational purposes only**.  
-> - Must only be used on websites you own or have explicit permission to test  
-> - Never use this to scan or attack systems without authorization  
-> - Unauthorized scanning may violate laws like the Computer Fraud and Abuse Act  
+**MiniScanner** 是一个面向课堂与学习用途的轻量级漏洞检测工具（PoC / 教学版），基于 Python 开发，支持模块化插件（目前包含 `sql`、`xss`、`port`、`bruteforce` 等）。项目目标是为课堂演示、渗透测试入门与脚本语言设计课程提供一个可扩展、易读的实战样例，同时支持本地演示靶场（如 DVWA、sqli-labs）。
 
-This is an **empty** project shell for the Mini Vulnerability Scanner.
-Follow the project plan in `docs/PLAN.md` and populate `src/` and `modules/ as you implement features.
+> 强烈声明：本工具仅用于*合法授权*的测试（你**拥有**或**被授权**测试的目标）。切勿将其用于未经授权的系统或进行非法入侵。使用之前请务必遵守当地法律与组织政策，并遵守负责任披露原则。
 
 ---
 
-**Responsible Usage Guidelines**:
-1. Always obtain written permission before scanning any website
-2. Respect robots.txt and website terms of service
-3. Never attempt to exploit vulnerabilities you discover without authorization
-4. Report any found vulnerabilities responsibly to site owners
+## 主要特性
 
-*By using this tool, you agree to use it ethically and legally.*
+- 模块化扫描器：以模块（module）方式组织（`sql`, `xss`, `port`, `bruteforce`），方便扩展。
+- 支持 Cookie 登录（DVWA 等需要 Cookie 的本地靶场）。
+- 输出 JSON 与 HTML 报告（可直接用于课堂展示）。
+- 支持外部 wordlist（`modules/payloads/wordlists/`）用于暴力破解模块。
+- 方便打包到 exe（PyInstaller）或打包为 Docker 镜像（Dockerfile / docker-compose 支持）。
+- 适合单人或小组课程项目开发、演示与扩展。
+
+---
+
+## 法律与安全（必须阅读）
+
+- 仅对你**有授权**的系统或靶场（如本地 DVWA、sqli-labs）运行本工具。
+- 对未授权系统进行扫描/攻击可能构成犯罪或民事责任。使用前请确认权限并保留测试授权凭证。
+- 如果在测试中发现真实漏洞，请遵守 **Responsible Disclosure（负责任披露）**，不要公开敏感信息或未经授权泄露漏洞细节。
+
+---
+
+## 快速开始（本地）
+
+1. 克隆仓库
+```bash
+git clone https://github.com/xyzdol/miniscanner.git
+cd miniscanner
