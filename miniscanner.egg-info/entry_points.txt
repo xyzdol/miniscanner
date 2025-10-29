@@ -1,0 +1,2 @@
+[console_scripts]
+miniscanner = src.app:main
