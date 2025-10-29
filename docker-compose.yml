@@ -1,8 +1,15 @@
-version: '3.8'
+version: "3.8"
 services:
-  scanner:
+  miniscanner:
     build: .
+    image: xyzdol/miniscanner:latest
+    # interactive so you can pass args on `docker-compose run`
+    stdin_open: true
+    tty: true
+    # volume: 挂载本地 wordlists/ reports 等（可选）
     volumes:
-      - ./:/app
-    ports:
-      - "8001:8001"
+      - ./modules/payloads/wordlists:/opt/miniscanner/modules/payloads/wordlists:ro
+      - ./reports:/opt/miniscanner/reports
+    # no network published by default (scanner makes outbound requests)
+    # example: override command to run bruteforce
+    # command: ["--target", "http://host.docker.internal:8898/vulnerabilities/brute/", "--modules", "bruteforce", "--cookie", "PHPSESSID=...; security=low", "--user-field", "username", "--pass-field", "password", "--output", "/opt/miniscanner/reports/brute_report.json", "--html", "/opt/miniscanner/reports/brute_report.html"]
