@@ -12,7 +12,7 @@
 - 支持 Cookie 登录（DVWA 等需要 Cookie 的本地靶场）。
 - 输出 JSON 与 HTML 报告（可直接用于课堂展示）。
 - 支持外部 wordlist（`modules/payloads/wordlists/`）用于暴力破解模块。
-- 方便打包到 exe（PyInstaller）或打包为 Docker 镜像（Dockerfile / docker-compose 支持）。
+- 方便打包到 exe（PyInstaller）,目前暂不支持打包为 Docker 镜像（还在开发中）。
 - 适合单人或小组课程项目开发、演示与扩展。
 
 ---
