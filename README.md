@@ -31,3 +31,23 @@
 ```bash
 git clone https://github.com/xyzdol/miniscanner.git
 cd miniscanner
+2. 创建并激活虚拟环境（Windows / macOS / Linux）
+```bash
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# macOS / Linux
+source .venv/bin/activate
+3. 安装依赖
+```bash
+pip install -r requirements.txt
+4. 目录结构（简要）
+```bash
+.
+├─ src/                # 主程序（app.py）
+├─ modules/            # 各扫描模块（sql_injection.py, xss_scan.py, bruteforce.py, port_scan.py）
+│  └─ payloads/
+│     └─ wordlists/    # users.txt, passwords.txt
+├─ reporters/          # json/html 报告生成器（html_reporter.py, json_reporter.py）
+├─ requirements.txt
+└─ README.md
