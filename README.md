@@ -51,3 +51,28 @@ pip install -r requirements.txt
 ├─ reporters/          # json/html 报告生成器（html_reporter.py, json_reporter.py）
 ├─ requirements.txt
 └─ README.md
+
+---
+
+## 端口扫描（port 模块）使用说明
+
+- 默认已包含在 `--modules sql,xss,port` 中；你也可以单独运行：
+  ```bash
+  python -m src.app --target 127.0.0.1 --modules port
+  ```
+
+- 可配置参数（通过模块统一的可选参数机制传入）
+  - `timeout`: 单端口连接超时（秒），默认 `0.5`
+  - `ports`: 自定义端口列表（如 `80,443,8080`），示例：
+    ```bash
+    python -m src.app --target 127.0.0.1 --modules port --method GET \
+      --param q  # 保留兼容，无实际影响
+    ```
+    如需自定义端口列表，可在调用处扩展（当前实现默认扫描一组常见端口）。
+
+- 报告输出：
+  ```bash
+  python -m src.app --target 127.0.0.1 --modules port \
+    --output port_report.json --html port_report.html
+  ```
+  生成 JSON/HTML 报告，HTML 支持搜索/只看有漏洞/展开折叠等。
